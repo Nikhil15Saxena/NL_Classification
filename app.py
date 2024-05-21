@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -16,10 +13,11 @@ from factor_analyzer import FactorAnalyzer
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 from factor_analyzer.factor_analyzer import calculate_bartlett_sphericity, calculate_kmo
+from sklearn.tree import export_text
 
 # Streamlit app
 def main():
-    st.title("Non-Linear Regression Analysis")
+    st.title("Non-Linear Regression Analysis_V1")
 
     st.header("Upload your dataset")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -29,17 +27,28 @@ def main():
         st.write("Data preview:")
         st.write(df.head())
 
-        # Filtering options
-        st.header("Filter Data")
-        filter_column = st.selectbox("Select column to filter:", df.columns)
-        filter_value = st.text_input(f"Enter value to filter in '{filter_column}' column:")
+        # Show original data shape
+        st.write("Original Data Shape:")
+        st.write(df.shape)
 
-        if filter_column and filter_value:
-            filtered_df = df[df[filter_column] == filter_value]
-            st.write("Filtered Data:")
-            st.write(filtered_df)
-        else:
-            filtered_df = df
+        # Multiple filtering options
+        st.header("Filter Data")
+        filter_columns = st.multiselect("Select columns to filter:", df.columns)
+        filters = {}
+        for col in filter_columns:
+            filters[col] = st.text_input(f"Enter value to filter in '{col}' column:")
+
+        filtered_df = df.copy()
+        for col, val in filters.items():
+            if val:
+                filtered_df = filtered_df[filtered_df[col] == val]
+
+        st.write("Filtered Data:")
+        st.write(filtered_df)
+
+        # Show filtered data shape
+        st.write("Filtered Data Shape:")
+        st.write(filtered_df.shape)
 
         # Allow user to select the outcome and independent variables
         outcome_var = st.selectbox("Select the outcome variable:", filtered_df.columns)
@@ -72,6 +81,7 @@ def main():
             plt.title('Scree Plot')
             plt.xlabel('Factors')
             plt.ylabel('Eigen Value')
+            plt.grid()
             st.pyplot(plt)
 
             # Heatmap of correlation matrix
@@ -88,29 +98,37 @@ def main():
             st.write(vif_data)
 
             # Factor Analysis
-            rotation_options = ["None", "Varimax", "Promax"]
-            rotation = st.selectbox("Select rotation:", rotation_options)
-            method_options = ["Principal", "Minres", "ML", "GLS", "OLS"]
-            method = st.selectbox("Select method:", method_options)
-            if rotation == "None":
-                rotation = None
-            if method == "Principal":
-                method = "principal"
-            elif method == "Varimax":
-                method = "varimax"
+            st.subheader("Factor Analysis")
 
-            fa = FactorAnalyzer(n_factors=df2.shape[1], method=method, rotation=rotation)
+            if st.checkbox("Toggle to select method and rotation"):
+                rotation_options = ["None", "Varimax", "Promax", "Quartimax", "Oblimin"]
+                rotation = st.selectbox("Select rotation:", rotation_options)
+                method_options = ["Principal", "Minres", "ML", "GLS", "OLS"]
+                method = st.selectbox("Select method:", method_options)
+                if rotation == "None":
+                    rotation = None
+                if method == "Principal":
+                    method = "principal"
+            else:
+                rotation = "varimax"
+                method = "principal"
+
+            st.write(f"Method: {method}, Rotation: {rotation}")
+
+            n_factors = st.number_input("Enter the number of factors:", min_value=1, max_value=df2.shape[1], value=6)
+            fa = FactorAnalyzer(n_factors=n_factors, method=method, rotation=rotation)
             fa.fit(df2)
             fa_df = pd.DataFrame(fa.loadings_.round(2), index=df2.columns)
             st.write("Factor Loadings:")
             st.write(fa_df)
 
-            final_factor = fa_df.copy()
-            st.write("Final Factors Table:")
-            st.write(final_factor)
-
             st.write("Factor Variance:")
-            st.write(pd.DataFrame(fa.get_factor_variance(), index=['Variance', 'Proportional Var', 'Cumulative Var']))
+            variance_df = pd.DataFrame(fa.get_factor_variance(), index=['Variance', 'Proportional Var', 'Cumulative Var']).T
+            st.write(variance_df)
+
+            # Communality
+            st.write("Communality:")
+            st.write(pd.DataFrame(fa.get_communalities(), index=df2.columns, columns=["Communality"]))
 
             # User-defined cluster names
             cluster_titles = st.text_input("Enter cluster names (comma-separated):", value="Efficacy,Supply and Samples,Patient Benefits,Cost and Coverage,Approval,MACE")
@@ -153,7 +171,32 @@ def main():
             st.write("Feature Importance:")
             st.write(imp_df)
 
-            # ROC Curve
-            fpr, tpr, _ = roc_curve(y_test, rf_classifier.predict_proba(X_test)[:, 1])
-            roc_auc = auc(fpr, tpr
+            # Button to display ROC Curve
+            if st.button("Show ROC Curve"):
+                fpr, tpr, _ = roc_curve(y_test, rf_classifier.predict_proba(X_test)[:, 1])
+                roc_auc = auc(fpr, tpr)
+                plt.figure(figsize=(10, 6))
+                plt.plot(fpr, tpr, color='blue', label=f'ROC curve (area = {roc_auc:.2f})')
+                plt.plot([0, 1], [0, 1], color='red', linestyle='--')
+                plt.xlabel('False Positive Rate')
+                plt.ylabel('True Positive Rate')
+                plt.title('Receiver Operating Characteristic (ROC) Curve')
+                plt.legend(loc="lower right")
+                st.pyplot(plt)
 
+            # Button to display Random Forest Trees
+            if st.button("Show Random Forest Trees"):
+                tree_text = export_text(rf_classifier.estimators_[0], feature_names=X.columns.to_list())
+                st.text(tree_text)
+
+            # About section
+            st.sidebar.title("About")
+            st.sidebar.info(
+                """
+                This app was created by Nikhil Saxena for LMRI team use.
+                Contact: Nikhil.Saxena@lilly.com
+                """
+            )
+
+if __name__ == "__main__":
+    main()
