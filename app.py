@@ -42,7 +42,25 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Streamlit app
 def main():
-    st.title("Non-Linear Regression Analysis_V1")
+    st.title("Non-Linear Classification Analysis Model")
+
+    # Enhanced About section
+            st.sidebar.title("About")
+            st.sidebar.markdown("""
+                ### About this App
+                This app was created by Nikhil Saxena for LMRI team use. It allows for comprehensive data analysis, including filtering, factor analysis, and random forest classification. 
+                
+                **Contact:** 
+                - Email: [Nikhil.Saxena@lilly.com](mailto:Nikhil.Saxena@lilly.com)
+                
+                **Features:**
+                - Upload and filter datasets
+                - Perform factor analysis with customizable settings
+                - Train and evaluate a Random Forest classifier with optional hyperparameter tuning
+                - Visualize results with ROC curves and feature importance
+                
+                ---
+                """, unsafe_allow_html=True)
     
     st.header("Upload your dataset")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -263,23 +281,7 @@ def main():
                 graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
                 st.graphviz_chart(graph.to_string())
 
-            # Enhanced About section
-            st.sidebar.title("About")
-            st.sidebar.markdown("""
-                ### About this App
-                This app was created by Nikhil Saxena for LMRI team use. It allows for comprehensive data analysis, including filtering, factor analysis, and random forest classification. 
-                
-                **Contact:** 
-                - Email: [Nikhil.Saxena@lilly.com](mailto:Nikhil.Saxena@lilly.com)
-                
-                **Features:**
-                - Upload and filter datasets
-                - Perform factor analysis with customizable settings
-                - Train and evaluate a Random Forest classifier with optional hyperparameter tuning
-                - Visualize results with ROC curves and feature importance
-                
-                ---
-                """, unsafe_allow_html=True)
+            
 
 if __name__ == "__main__":
     main()
