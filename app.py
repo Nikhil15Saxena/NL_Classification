@@ -17,7 +17,7 @@ from sklearn.tree import export_text
 
 # Streamlit app
 def main():
-    st.title("Non-Linear Regression Analysis_V1")
+    st.title("Non-Linear Classification Analysis Model")
 
     st.header("Upload your dataset")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
