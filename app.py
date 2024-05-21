@@ -8,16 +8,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from factor_analyzer import FactorAnalyzer
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 from factor_analyzer.factor_analyzer import calculate_bartlett_sphericity, calculate_kmo
-from sklearn.tree import export_text
+from sklearn.tree import export_graphviz
+import pydotplus
+from io import StringIO
+import graphviz
 
 # Streamlit app
 def main():
-    st.title("Non-Linear Classification Analysis Model")
+    st.title("Non-Linear Classification Analysis")
 
     st.header("Upload your dataset")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -141,7 +144,37 @@ def main():
             # Random Forest Classifier
             X = factor_scores
             X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
-            rf_classifier = RandomForestClassifier(random_state=42, max_depth=3, max_features=3, n_estimators=500)
+
+            # Toggle for GridSearchCV
+            if st.checkbox("Use GridSearchCV for hyperparameter tuning"):
+                max_depth_range = st.slider("Select max_depth range", 1, 20, (1, 10))
+                max_features_range = st.slider("Select max_features range", 1, X.shape[1], (1, 5))
+                n_estimators_range = st.slider("Select n_estimators range", 100, 1000, (100, 500))
+
+                param_grid = {
+                    'max_depth': list(range(max_depth_range[0], max_depth_range[1] + 1)),
+                    'max_features': list(range(max_features_range[0], max_features_range[1] + 1)),
+                    'n_estimators': list(range(n_estimators_range[0], n_estimators_range[1] + 1, 100))
+                }
+
+                rf = RandomForestClassifier(random_state=42)
+                grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+                grid_search.fit(X_train, y_train)
+                best_params = grid_search.best_params_
+                st.write("Best Hyperparameters found by GridSearchCV:")
+                st.write(best_params)
+
+                rf_classifier = RandomForestClassifier(random_state=42, **best_params)
+            else:
+                # Ask if the user wants to input hyperparameters manually
+                if st.checkbox("Manually input Random Forest hyperparameters"):
+                    max_depth = st.number_input("Enter max_depth:", min_value=1, max_value=20, value=3)
+                    max_features = st.number_input("Enter max_features:", min_value=1, max_value=X.shape[1], value=3)
+                    n_estimators = st.number_input("Enter n_estimators:", min_value=100, max_value=1000, value=500, step=100)
+                    rf_classifier = RandomForestClassifier(random_state=42, max_depth=max_depth, max_features=max_features, n_estimators=n_estimators)
+                else:
+                    rf_classifier = RandomForestClassifier(random_state=42, max_depth=3, max_features=3, n_estimators=500)
+
             rf_classifier.fit(X_train, y_train)
             y_train_pred = rf_classifier.predict(X_train)
             y_test_pred = rf_classifier.predict(X_test)
@@ -186,15 +219,19 @@ def main():
 
             # Button to display Random Forest Trees
             if st.button("Show Random Forest Trees"):
-                tree_text = export_text(rf_classifier.estimators_[0], feature_names=X.columns.to_list())
-                st.text(tree_text)
+                # Select one of the trees to display
+                estimator = rf_classifier.estimators_[0]
+                dot_data = StringIO()
+                export_graphviz(estimator, out_file=dot_data, filled=True, rounded=True,
+                                special_characters=True, feature_names=X.columns, class_names=rf_classifier.classes_.astype(str))
+                graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+                st.graphviz_chart(graph.to_string())
 
             # About section
             st.sidebar.title("About")
             st.sidebar.info(
                 """
-                This app was created by Nikhil Saxena for LMRI team use.
-                Contact: Nikhil.Saxena@lilly.com
+                This app was created by N.
                 """
             )
 
