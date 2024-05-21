@@ -185,6 +185,11 @@ def main():
             X = factor_scores
             X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
 
+             # Default hyperparameters
+            max_depth = 3
+            max_features = 3
+            n_estimators = 500
+
             # Toggle for GridSearchCV
             if st.checkbox("Use GridSearchCV for hyperparameter tuning"):
                 max_depth_range = st.slider("Select max_depth range", 1, 20, (1, 10))
