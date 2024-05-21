@@ -186,7 +186,7 @@ def main():
             X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
 
             # Toggle for GridSearchCV
-            if st.button("Use GridSearchCV for hyperparameter tuning"):
+            if st.checkbox("Use GridSearchCV for hyperparameter tuning"):
                 max_depth_range = st.slider("Select max_depth range", 1, 20, (1, 10))
                 max_features_range = st.slider("Select max_features range", 1, X.shape[1], (1, 5))
                 n_estimators_range = st.slider("Select n_estimators range", 100, 1000, (100, 500))
@@ -207,7 +207,7 @@ def main():
                 rf_classifier = RandomForestClassifier(random_state=42, **best_params)
             else:
                 # Ask if the user wants to input hyperparameters manually
-                if st.button("Manually set Random Forest parameters"):
+                if st.checkbox("Manually set Random Forest parameters"):
                     max_depth = st.number_input("max_depth", min_value=1, max_value=20, value=3)
                     max_features = st.number_input("max_features", min_value=1, max_value=X.shape[1], value=3)
                     n_estimators = st.number_input("n_estimators", min_value=100, max_value=1000, step=100, value=500)
