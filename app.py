@@ -18,10 +18,32 @@ import pydotplus
 from io import StringIO
 import graphviz
 
+# CSS to inject contained in a string
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            .stButton>button {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 24px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 16px;
+            }
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Streamlit app
 def main():
-    st.title("Non-Linear Classification Analysis")
-
+    st.title("Non-Linear Regression Analysis_V1")
+    
     st.header("Upload your dataset")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
@@ -103,7 +125,7 @@ def main():
             # Factor Analysis
             st.subheader("Factor Analysis")
 
-            if st.button("Toggle to select method and rotation"):
+            if st.button("Click to select method and rotation"):
                 rotation_options = ["None", "Varimax", "Promax", "Quartimax", "Oblimin"]
                 rotation = st.selectbox("Select rotation:", rotation_options)
                 method_options = ["Principal", "Minres", "ML", "GLS", "OLS"]
@@ -145,7 +167,7 @@ def main():
             X = factor_scores
             X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
 
-            # button for GridSearchCV
+            # Toggle for GridSearchCV
             if st.button("Use GridSearchCV for hyperparameter tuning"):
                 max_depth_range = st.slider("Select max_depth range", 1, 20, (1, 10))
                 max_features_range = st.slider("Select max_features range", 1, X.shape[1], (1, 5))
@@ -167,13 +189,27 @@ def main():
                 rf_classifier = RandomForestClassifier(random_state=42, **best_params)
             else:
                 # Ask if the user wants to input hyperparameters manually
-                if st.button("Manually input Random Forest hyperparameters"):
-                    max_depth = st.number_input("Enter max_depth:", min_value=1, max_value=20, value=3)
-                    max_features = st.number_input("Enter max_features:", min_value=1, max_value=X.shape[1], value=3)
-                    n_estimators = st.number_input("Enter n_estimators:", min_value=100, max_value=1000, value=500, step=100)
-                    rf_classifier = RandomForestClassifier(random_state=42, max_depth=max_depth, max_features=max_features, n_estimators=n_estimators)
+                if st.button("Manually set Random Forest parameters"):
+                    max_depth = st.number_input("max_depth", min_value=1, max_value=20, value=3)
+                    max_features = st.number_input("max_features", min_value=1, max_value=X.shape[1], value=3)
+                    n_estimators = st.number_input("n_estimators", min_value=100, max_value=1000, step=100, value=500)
                 else:
-                    rf_classifier = RandomForestClassifier(random_state=42, max_depth=3, max_features=3, n_estimators=500)
+                    max_depth = 3
+                    max_features = 3
+                    n_estimators = 500
+                
+                rf_classifier = RandomForestClassifier(
+                    random_state=42,
+                    max_depth=max_depth,
+                    max_features=max_features,
+                    n_estimators=n_estimators
+                )
+
+            # Display current hyperparameters
+            st.write("Current Hyperparameters used:")
+            st.write(f"max_depth: {max_depth}")
+            st.write(f"max_features: {max_features}")
+            st.write(f"n_estimators: {n_estimators}")
 
             rf_classifier.fit(X_train, y_train)
             y_train_pred = rf_classifier.predict(X_train)
@@ -227,14 +263,24 @@ def main():
                 graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
                 st.graphviz_chart(graph.to_string())
 
-            # About section
+            # Enhanced About section
             st.sidebar.title("About")
-            st.sidebar.info(
-                """
-               This app was created by Nikhil Saxena for LMRI team use.
-                For further info please contact: Nikhil.Saxena@lilly.com
-                """
-            )
+            st.sidebar.markdown("""
+                ### About this App
+                This app was created by Nikhil Saxena for LMRI team use. It allows for comprehensive data analysis, including filtering, factor analysis, and random forest classification. 
+                
+                **Contact:** 
+                - Email: [Nikhil.Saxena@lilly.com](mailto:Nikhil.Saxena@lilly.com)
+                
+                **Features:**
+                - Upload and filter datasets
+                - Perform factor analysis with customizable settings
+                - Train and evaluate a Random Forest classifier with optional hyperparameter tuning
+                - Visualize results with ROC curves and feature importance
+                
+                ---
+                """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
