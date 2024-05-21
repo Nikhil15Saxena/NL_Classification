@@ -189,12 +189,13 @@ def main():
             if st.checkbox("Use GridSearchCV for hyperparameter tuning"):
                 max_depth_range = st.slider("Select max_depth range", 1, 20, (1, 10))
                 max_features_range = st.slider("Select max_features range", 1, X.shape[1], (1, 5))
-                n_estimators_range = st.slider("Select n_estimators range", 100, 1000, (100, 500))
+                # Adjust the step parameter for n_estimators slider to ensure a difference of 500
+                n_estimators_range = st.slider("Select n_estimators range", 100, 1000, (100, 500), step=500)
 
                 param_grid = {
                     'max_depth': list(range(max_depth_range[0], max_depth_range[1] + 1)),
                     'max_features': list(range(max_features_range[0], max_features_range[1] + 1)),
-                    'n_estimators': list(range(n_estimators_range[0], n_estimators_range[1] + 1, 100))
+                    'n_estimators': list(range(n_estimators_range[0], n_estimators_range[1] + 1, 500))
                 }
 
                 rf = RandomForestClassifier(random_state=42)
